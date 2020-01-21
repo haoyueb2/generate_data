@@ -19,10 +19,9 @@ def random_process(img_path,xml_path,copy_path,change,iter_array,rotation,anchor
     if change:
         A = utils.add_filter(A)
  #   A = utils.sp_noise(A,0.001)
- #   A = cv2.GaussianBlur(A,ksize=(3,3),sigmaX=1,sigmaY=1)、
+ #   A = cv2.GaussianBlur(A,ksize=(3,3),sigmaX=1,sigmaY=1)
     ### 添加高斯噪声
     A = utils.GaussianNoise(A,0,9)
-
 
     img_path = img_path.split('\\')[-1].split('.')[0]
     xml_path = os.path.join(xml_path,img_path+str('.xml'))

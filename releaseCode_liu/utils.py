@@ -46,7 +46,15 @@ def GaussianNoise(img,mu,sigma):
     out = np.uint8(out * 255)
     return out
 
-def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix):
+# mode
+def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix,mode = 1,word = False):
+    '''
+    Parameters
+    - mode: 生成图片的模式
+        - 0: 矩形贴图
+        - 1: 多边形贴图
+    - word: 在四角添加时间
+    '''
     ### 最终输出的图片矩阵
     final = A
     ### 迭代数，因为是随机寻找可裁剪的图片，所以有的时候会陷入死循环，用它来做一个限制
@@ -201,10 +209,25 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
             crops.append([points[0][0],min_y,points[-1][0],max_y])
             # 生成一个mask，面积大小和原图相同
             maskIm = Image.new('L', (w, h), 0)
-            polygon = [tuple(x) for x in c_points]
-            # 转换一下点的坐标(应该是第二个点和第三个点换一下，这个的顺序和我们生成时添加的顺序有点差别)
-            polygon[2], polygon[3] = polygon[3], polygon[2]
+
             # 向mask上要裁剪的区域填充1，其他为0
+            if mode == 0:
+                polygon = [tuple(x) for x in c_points]
+                # 转换一下点的坐标(应该是第二个点和第三个点换一下，这个的顺序和我们生成时添加的顺序有点差别)
+                polygon[2], polygon[3] = polygon[3], polygon[2]
+            elif mode == 1:
+                width = points[-1][0] - points[0][0]
+                height = max_y - min_y
+                radius = min(width, height) * random.uniform(0.15, 0.4)
+                #     radius = min(width,height)*0.7
+                center_x = (points[0][0] + points[-1][0])/2
+                center_y = (min_y + max_y)/2
+                spikeyness = random.uniform(0, 0.15)
+                irregular = random.uniform(0.4, 0.7)
+                #     n = random.randint(6,12)
+                n = 10
+                polygon = generatePolygon(center_x, center_y, radius, irregular, spikeyness, n)
+
             ImageDraw.Draw(maskIm).polygon(polygon, outline=1, fill=1)
             maskIm = np.array(maskIm).reshape(h, w, 1)
             # 将其concat成3通道
@@ -328,3 +351,63 @@ def do_a_shift(A,save_to_dir):
     A = cv2.imread(os.path.join(save_to_dir,file[0]))
     os.remove(os.path.join(save_to_dir,file[0]))
     return A
+
+#多边形相关
+def generatePolygon( ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts ) :
+    #注释不能顶到头？
+    '''
+    Start with the centre of the polygon at ctrX, ctrY, 
+    then creates the polygon by sampling points on a circle around the centre. 
+    Randon noise is added by varying the angular spacing between sequential points,
+    and by varying the radial distance of each point from the centre.
+
+    Params:
+    ctrX, ctrY - coordinates of the "centre" of the polygon
+    aveRadius - in px, the average radius of this polygon, this roughly controls how large the polygon is, really only useful for order of magnitude.
+    irregularity - [0,1] indicating how much variance there is in the angular spacing of vertices. [0,1] will map to [0, 2pi/numberOfVerts]
+    spikeyness - [0,1] indicating how much variance there is in each vertex from the circle of radius aveRadius. [0,1] will map to [0, aveRadius]
+    numVerts - self-explanatory
+
+    Returns a list of vertices, in CCW order.
+    '''
+
+    irregularity = clip( irregularity, 0,1 ) * 2*math.pi / numVerts
+    spikeyness = clip( spikeyness, 0,1 ) * aveRadius
+
+    # generate n angle steps
+    angleSteps = []
+    lower = (2*math.pi / numVerts) - irregularity
+    upper = (2*math.pi / numVerts) + irregularity
+    sum = 0
+    for i in range(numVerts) :
+        tmp = random.uniform(lower, upper)
+        angleSteps.append( tmp )
+        sum = sum + tmp
+
+    # normalize the steps so that point 0 and point n+1 are the same
+    k = sum / (2*math.pi)
+    for i in range(numVerts) :
+        angleSteps[i] = angleSteps[i] / k
+
+    # now generate the points
+    points = []
+    angle = random.uniform(0, 2*math.pi)
+    for i in range(numVerts) :
+        r_i = clip( random.gauss(aveRadius, spikeyness), 0, 2*aveRadius )
+        x = ctrX + r_i*math.cos(angle)
+        y = ctrY + r_i*math.sin(angle)
+        points.append( (int(x),int(y)) )
+
+        angle = angle + angleSteps[i]
+
+    return points
+
+def clip(x, min, max) :
+    if(min > max ):  
+        return x    
+    elif( x < min ):  
+        return min
+    elif( x > max ):  
+        return max
+    else:     
+        return x

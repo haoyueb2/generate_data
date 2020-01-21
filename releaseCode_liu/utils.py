@@ -47,12 +47,13 @@ def GaussianNoise(img,mu,sigma):
     return out
 
 
-def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix,mode = 1):
+def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix,mode = 1,margin_blur = True):
     '''
     Parameters
     - mode: 生成图片的模式
         - 0: 矩形贴图
         - 1: 多边形贴图
+    - margin_blur: 边缘模糊
     '''
     ### 最终输出的图片矩阵
     final = A
@@ -224,16 +225,20 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
                 center_y = (min_y + max_y)/2
                 spikeyness = random.uniform(0, 0.15)
                 irregular = random.uniform(0.4, 0.7)
-                # 全0生成标准多边形
+                # 全0生成标准多边形,n是多边形边数
                 # spikeyness = 0
                 # irregular = 0
                 # n = random.randint(6,12)
                 n = 10
                 polygon = generatePolygon(center_x, center_y, x_radius,y_radius, irregular, spikeyness, n)
 
+
+
             ImageDraw.Draw(maskIm).polygon(polygon, outline=255, fill=255)
-            #轻度边缘模糊，肉眼不易观察，调大可以看出
-            maskIm = maskIm.filter(ImageFilter.GaussianBlur(random.uniform(0.8, 1.1)))
+
+            # 轻度边缘模糊，肉眼不易观察，调大可以看出
+            if margin_blur is True:
+                maskIm = maskIm.filter(ImageFilter.GaussianBlur(random.uniform(0.8, 1.1)))
             # 随机读取一张图去裁剪差异贴图 贴到原图上
             img_temp_path = os.path.join(copy_path, random.choice(img_list))
             img_temp = cv2.imread(img_temp_path)
@@ -261,6 +266,12 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
 
             final = cv2.cvtColor(np.array(pil_final), cv2.COLOR_RGB2BGR)
             iter_num = iter_num+1
+
+            # 多边形的框由于spikyness偏移有些不准，校正一下
+            bounding_box = maskIm.getbbox()
+            crops.pop()
+            crops.append(bounding_box)
+
         else:
             break
     xmlWrite.convert_xml(crops, xml_path, img_path, [w, h, c],subfix)

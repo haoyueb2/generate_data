@@ -28,7 +28,7 @@ https://stackoverflow.com/questions/8997099/algorithm-to-generate-random-2d-poly
 
 ![image-20200121224044793](img/image-20200121224044793.png)
 
-这样的模糊效果不太好
+边缘模糊的值设为5，模糊效果如图，试验情况不太好
 
 
 
@@ -37,3 +37,13 @@ https://stackoverflow.com/questions/8997099/algorithm-to-generate-random-2d-poly
 
 
 问题：spikyness大的时候可能会超出框外，所以两边都缩小一点，最后再用pil的方法裁剪一下边
+
+
+
+多边形要再旋转一下的话后续可以用PIl的rotate函数，不过框要重新生成
+
+现在啊多边形稍有超出或者稍短一点，也是要重新生成框来更好的匹配
+
+
+
+多边形面积是个问题，原来的面积和多边形面积

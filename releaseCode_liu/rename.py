@@ -3,15 +3,17 @@ import numpy as np
 import img_process
 import cv2
 import random
-
+from PIL import Image,ImageDraw,ImageFont
+import time
 import utils
 import math
 
 # rotation  旋转角度
 # anchor_ratio 1 => 1:1  2=>1:2
 # area 0.05 0.25 0.5 [small medium large]
+# word 是否四角添加时间
 def imgs_rename(imgs_path,xml_path,copy_path,w_h_ratio,s_ratio,rotation=[0,math.pi/4,math.pi/2,3*math.pi/4],
-                anchor_ratio=[1,2,3,5,7],area=[0.05,0.25,0.5]):
+                anchor_ratio=[1,2,3,5,7],area=[0.05,0.25,0.5],word = True):
     imgs_labels_name = np.array(os.listdir(imgs_path))
     # 从 000001开始
     i = 1
@@ -94,6 +96,32 @@ def imgs_rename(imgs_path,xml_path,copy_path,w_h_ratio,s_ratio,rotation=[0,math.
         ### img_result 所返回的处理过后的图片矩阵
         ### process_num 所使用的 生成元素 的个数
         img_result,process_num = img_process.random_process(img_new_name,xml_path,copy_path,method,sequence[iter:iter+5],rotation,anchor_ratio,area,subfix)
+
+
+        if word is True:
+            pil_img_before_process = Image.open(img_new_name)
+            width,height = pil_img_before_process.size
+            #设置位置，颜色，字体
+            word_loc_list = [(width - 250, height - 30), (3, height - 30), (width - 250, 3), (3, 3)]
+            word_loc = random.choice(word_loc_list)
+            color_list = ['rgb(255, 255, 255)', 'rgb(0, 0, 0)']
+            color = random.choice(color_list)
+            font = ImageFont.truetype('arial.ttf', 20)
+
+            #对处理前的图片写时间
+            draw_text = ImageDraw.Draw(pil_img_before_process)
+            message = time.asctime(time.localtime(time.time()))
+            draw_text.text(word_loc, message, fill=color, font=font)
+            os.remove(img_new_name)
+            pil_img_before_process.save(img_new_name)
+
+            #对处理后的图片写时间
+            pil_img_result = Image.fromarray(cv2.cvtColor(img_result, cv2.COLOR_BGR2RGB))
+            draw_text = ImageDraw.Draw(pil_img_result)
+            message = time.asctime( time.localtime(time.time()+111169) )
+            draw_text.text(word_loc,message,fill=color,font = font)
+            img_result = cv2.cvtColor(np.array(pil_img_result), cv2.COLOR_RGB2BGR)
+
         cv2.imwrite(os.path.join(os.path.abspath(imgs_path), 'i00' + format(str(i), '0>4s') + "_A"+subfix),img_result)
         if result == 0:
             A = cv2.imread(img_new_name)

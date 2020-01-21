@@ -46,14 +46,13 @@ def GaussianNoise(img,mu,sigma):
     out = np.uint8(out * 255)
     return out
 
-# mode
-def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix,mode = 1,word = False):
+
+def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,area,subfix,mode = 1):
     '''
     Parameters
     - mode: 生成图片的模式
         - 0: 矩形贴图
         - 1: 多边形贴图
-    - word: 在四角添加时间
     '''
     ### 最终输出的图片矩阵
     final = A
@@ -259,9 +258,8 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
             pil_final = Image.fromarray(cv2.cvtColor(final,cv2.COLOR_BGR2RGB))
             pil_img_tmp = Image.fromarray(cv2.cvtColor(img_temp,cv2.COLOR_BGR2RGB))
             pil_final.paste(pil_img_tmp,maskIm)
-            final = cv2.cvtColor(np.array(pil_final),cv2.COLOR_RGB2BGR)
 
-
+            final = cv2.cvtColor(np.array(pil_final), cv2.COLOR_RGB2BGR)
             iter_num = iter_num+1
         else:
             break

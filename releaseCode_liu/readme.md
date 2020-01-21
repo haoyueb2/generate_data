@@ -32,5 +32,8 @@ https://stackoverflow.com/questions/8997099/algorithm-to-generate-random-2d-poly
 
 
 
-有问题：有些地方有框，但是没有贴图？？
+有问题：有些地方有框，但是没有贴图？？没贴图这个是什么原因？？
 
+
+
+问题：spikyness大的时候可能会超出框外，所以两边都缩小一点，最后再用pil的方法裁剪一下边

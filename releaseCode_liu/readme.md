@@ -26,5 +26,11 @@ https://stackoverflow.com/questions/8997099/algorithm-to-generate-random-2d-poly
 
 
 
+![image-20200121224044793](img/image-20200121224044793.png)
 
+这样的模糊效果不太好
+
+
+
+有问题：有些地方有框，但是没有贴图？？
 

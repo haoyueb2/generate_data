@@ -3,7 +3,7 @@ import numpy as np
 import random
 import math
 import os
-from PIL import Image,ImageDraw
+from PIL import Image,ImageDraw,ImageFilter
 from keras.preprocessing.image import ImageDataGenerator,load_img,img_to_array
 import xmlWrite
 
@@ -232,25 +232,36 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
                 n = 10
                 polygon = generatePolygon(center_x, center_y, x_radius,y_radius, irregular, spikeyness, n)
 
-            ImageDraw.Draw(maskIm).polygon(polygon, outline=1, fill=1)
-
-            maskIm = np.array(maskIm).reshape(h, w, 1)
-            # 将其concat成3通道
-            maskIm = np.concatenate([maskIm, maskIm, maskIm], axis=2)
-            # print(maskIm)
-            copy_img = np.zeros((h, w, 3), dtype=np.uint8)
+            ImageDraw.Draw(maskIm).polygon(polygon, outline=255, fill=255)
+            #轻度边缘模糊，肉眼不易观察，调大可以看出
+            maskIm = maskIm.filter(ImageFilter.GaussianBlur(random.uniform(0.8, 1.1)))
             # 随机读取一张图去裁剪差异贴图 贴到原图上
             img_temp_path = os.path.join(copy_path, random.choice(img_list))
             img_temp = cv2.imread(img_temp_path)
             img_temp = cv2.resize(img_temp, (w, h))
-            # 利用np.where 将mask贴到原图上
-            # P这里的处理是为了防止P矩阵中有0
-            # C的处理时，如果maskIm的当前元素为1，则赋予P的相同位置的像素值，否则则置0，这就将要裁剪的部分从图中抠了出来
-            P = np.where(img_temp, img_temp, 1)
-            C = np.where(maskIm, P, 0)
-            # 抠出来之后，就可以将其贴在原图上
-            final = np.where(C,C, final)
-            np.uint8(final)
+
+
+            # maskIm = np.array(maskIm).reshape(h, w, 1)
+            # # 将其concat成3通道
+            # maskIm = np.concatenate([maskIm, maskIm, maskIm], axis=2)
+            #
+            #
+            # # 利用np.where 将mask贴到原图上
+            # # P这里的处理是为了防止P矩阵中有0
+            # # C的处理时，如果maskIm的当前元素为1，则赋予P的相同位置的像素值，否则则置0，这就将要裁剪的部分从图中抠了出来
+            # P = np.where(img_temp, img_temp, 1)
+            # C = np.where(maskIm, P, 0)
+            # # 抠出来之后，就可以将其贴在原图上
+            # final = np.where(C,C, final)
+            # np.uint8(final)
+
+            # 注释掉原来的，改由PIL实现粘贴以实现边缘模糊
+            pil_final = Image.fromarray(cv2.cvtColor(final,cv2.COLOR_BGR2RGB))
+            pil_img_tmp = Image.fromarray(cv2.cvtColor(img_temp,cv2.COLOR_BGR2RGB))
+            pil_final.paste(pil_img_tmp,maskIm)
+            final = cv2.cvtColor(np.array(pil_final),cv2.COLOR_RGB2BGR)
+
+
             iter_num = iter_num+1
         else:
             break

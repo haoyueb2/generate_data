@@ -218,17 +218,22 @@ def release_difference(A,img_path,xml_path,copy_path,iter_array,rotation,anchor,
             elif mode == 1:
                 width = points[-1][0] - points[0][0]
                 height = max_y - min_y
-                radius = min(width, height) * random.uniform(0.15, 0.4)
-                #     radius = min(width,height)*0.7
+                # radius = min(width, height) * random.uniform(0.15, 0.4)
+                x_radius = width*0.5
+                y_radius = height*0.5
                 center_x = (points[0][0] + points[-1][0])/2
                 center_y = (min_y + max_y)/2
                 spikeyness = random.uniform(0, 0.15)
                 irregular = random.uniform(0.4, 0.7)
-                #     n = random.randint(6,12)
+                # 全0生成标准多边形
+                # spikeyness = 0
+                # irregular = 0
+                # n = random.randint(6,12)
                 n = 10
-                polygon = generatePolygon(center_x, center_y, radius, irregular, spikeyness, n)
+                polygon = generatePolygon(center_x, center_y, x_radius,y_radius, irregular, spikeyness, n)
 
             ImageDraw.Draw(maskIm).polygon(polygon, outline=1, fill=1)
+
             maskIm = np.array(maskIm).reshape(h, w, 1)
             # 将其concat成3通道
             maskIm = np.concatenate([maskIm, maskIm, maskIm], axis=2)
@@ -353,7 +358,7 @@ def do_a_shift(A,save_to_dir):
     return A
 
 #多边形相关
-def generatePolygon( ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts ) :
+def generatePolygon( ctrX, ctrY, x_radius,y_radius, irregularity, spikeyness, numVerts ) :
     #注释不能顶到头？
     '''
     Start with the centre of the polygon at ctrX, ctrY, 
@@ -372,8 +377,8 @@ def generatePolygon( ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts )
     '''
 
     irregularity = clip( irregularity, 0,1 ) * 2*math.pi / numVerts
-    spikeyness = clip( spikeyness, 0,1 ) * aveRadius
-
+    spikeyness_x = clip( spikeyness, 0,1 ) * x_radius
+    spikeyness_y = clip( spikeyness, 0,1 ) * y_radius
     # generate n angle steps
     angleSteps = []
     lower = (2*math.pi / numVerts) - irregularity
@@ -391,11 +396,14 @@ def generatePolygon( ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts )
 
     # now generate the points
     points = []
-    angle = random.uniform(0, 2*math.pi)
+    # angle = random.uniform(0, 2*math.pi)
+    angle = 0
     for i in range(numVerts) :
-        r_i = clip( random.gauss(aveRadius, spikeyness), 0, 2*aveRadius )
-        x = ctrX + r_i*math.cos(angle)
-        y = ctrY + r_i*math.sin(angle)
+        a_i = clip( random.gauss(x_radius, spikeyness_x), 0, 2*x_radius )
+        b_i = clip( random.gauss(y_radius, spikeyness_y), 0, 2*y_radius )
+        #椭圆的参数方程
+        x = ctrX + a_i*math.cos(angle)
+        y = ctrY + b_i*math.sin(angle)
         points.append( (int(x),int(y)) )
 
         angle = angle + angleSteps[i]

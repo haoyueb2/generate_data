@@ -2,13 +2,19 @@
 typora-copy-images-to: img
 ---
 
-小记：
+图片路径什么的都没改，代码替换了应该可以直接运行
+
+可看最近的commit历史，都是按顺序加上去的
+
+https://github.com/mooooon333/generate_data
+
+
 
 图片张数必须比364多？
 
 
 
-主要改变：
+## 主要改变：
 
 utils可选多边形模式和边缘模糊
 
